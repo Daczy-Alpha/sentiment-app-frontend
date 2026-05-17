@@ -30,9 +30,22 @@ jobs:
           docker build -t sentiment-frontend:${{ github.run_number }} .
           docker tag sentiment-frontend:${{ github.run_number }} 487620625686.dkr.ecr.eu-north-1.amazonaws.com/sentiment-frontend:${{ github.run_number }}
           docker push 487620625686.dkr.ecr.eu-north-1.amazonaws.com/sentiment-frontend:${{ github.run_number }}
+  
+  # continuous-deployment:
+  #   runs-on: ubuntu-latest
+  #   needs: continuous-integration
+  #   steps:
+  #     - name: Check my ssh key
+  #       run: |
+  #         echo "${{ secrets.EC2_SSH_KEY }}" > mykey.pem
+  #         chmod 400 mykey.pem
+
+  #         ssh -o StrictHostKeyChecking=no -i mykey.pem ec2-user@13.48.42.102 "docker pull 487620625686.dkr.ecr.eu-north-1.amazonaws.com/sentiment-frontend:${{ github.run_number }}"
 
 
-          continuous-cluster-deployment:
+  #         ssh -o StrictHostKeyChecking=no -i mykey.pem ec2-user@13.48.42.102 "docker run -d -p 443:80 487620625686.dkr.ecr.eu-north-1.amazonaws.com/sentiment-frontend:${{ github.run_number }}"
+
+  continuous-cluster-deployment:
     runs-on: ubuntu-latest
     needs: continuous-integration
     steps:
@@ -41,7 +54,7 @@ jobs:
           git clone https://${{ secrets.GITOPS_USERNAME }}:${{secrets.GITOPS_TOKEN}}@github.com/Daczy-Alpha/sent-fron-config.git
           cd sent-fron-config
           cat deployment.yaml
-          sed -i "s+487620625686.dkr.ecr.eu-north-1.amazonaws.com/sentiment-frontend:.*+487620625686.dkr.ecr.eu-north-1.amazonaws.com/sentiment-frontend:${{ github.run_number }}+g" ledna-app-deployment.yaml
+          sed -i "s+487620625686.dkr.ecr.eu-north-1.amazonaws.com/sentiment-frontend:.*+487620625686.dkr.ecr.eu-north-1.amazonaws.com/sentiment-frontend:${{ github.run_number }}+g" deployment.yaml
           cat deployment.yaml
           git add .
           git config user.name ${{ secrets.GITOPS_USERNAME }}
