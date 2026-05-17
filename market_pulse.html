@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Market Pulse</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --ink: #0f0f0f;
+    --paper: #f5f0e8;
+    --cream: #ede8dc;
+    --rule: #d4cfc4;
+    --bullish: #1a6b3a;
+    --bullish-bg: #e8f5ee;
+    --bullish-light: #2d8a52;
+    --bearish: #8b1a1a;
+    --bearish-bg: #f5e8e8;
+    --bearish-light: #b52a2a;
+    --mixed: #5a4e2d;
+    --mixed-bg: #f5f0e0;
+    --mixed-light: #7a6a3d;
+    --accent: #c8a84b;
+    --mono: 'IBM Plex Mono', monospace;
+    --serif: 'Playfair Display', serif;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    border-bottom: 2px solid var(--ink);
+    padding: 0 2rem;
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    background: var(--paper);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .masthead {
+    padding: 1rem 0;
+    border-right: 1px solid var(--rule);
+    padding-right: 2rem;
+  }
+
+  .masthead h1 {
+    font-family: var(--serif);
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  .masthead .tagline {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #888;
+    margin-top: 0.25rem;
+  }
+
+  .header-meta {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+    color: #666;
+  }
+
+  .live-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .pulse {
+    width: 8px;
+    height: 8px;
+    background: var(--bullish);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+
+  /* SUMMARY BAR - Updated to 3 columns */
+  .summary-bar {
+    border-bottom: 1px solid var(--rule);
+    display: grid;
+    grid-template-columns: 1fr 1px 1fr 1px 1fr;
+    background: var(--cream);
+  }
+
+  .summary-divider {
+    background: var(--rule);
+  }
+
+  .summary-item {
+    padding: 1rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .summary-label {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #888;
+  }
+
+  .summary-value {
+    font-family: var(--serif);
+    font-size: 1.4rem;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .summary-value.bullish { color: var(--bullish); }
+  .summary-value.bearish { color: var(--bearish); }
+  .summary-value.mixed { color: var(--mixed); }
+
+  /* MAIN LAYOUT */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    min-height: calc(100vh - 140px);
+    border-bottom: 1px solid var(--rule);
+  }
+
+  /* FEED */
+  .feed-section {
+    border-right: 1px solid var(--rule);
+  }
+
+  .section-header {
+    padding: 0.75rem 1.5rem;
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--paper);
+    position: sticky;
+    top: 73px;
+    z-index: 50;
+  }
+
+  .section-title {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #888;
+  }
+
+  .article-count {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: #aaa;
+  }
+
+  .feed {
+    overflow-y: auto;
+    max-height: calc(100vh - 210px);
+  }
+
+  .headline-card {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--rule);
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 1rem;
+    align-items: start;
+    cursor: pointer;
+    transition: background 0.15s;
+    animation: slideIn 0.3s ease forwards;
+    opacity: 0;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .headline-card:hover { background: var(--cream); }
+
+  .mood-bar {
+    width: 3px;
+    height: 100%;
+    min-height: 48px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .mood-bar.bullish { background: var(--bullish); }
+  .mood-bar.bearish { background: var(--bearish); }
+  .mood-bar.mixed { background: var(--accent); }
+
+  .headline-content { flex: 1; }
+
+  .headline-text {
+    font-family: var(--serif);
+    font-size: 1rem;
+    line-height: 1.45;
+    font-weight: 400;
+    color: var(--ink);
+    margin-bottom: 0.5rem;
+  }
+
+  .headline-meta {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .source-tag {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #888;
+  }
+
+  .time-tag {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: #666;
+    background: var(--cream);
+    padding: 0.15rem 0.4rem;
+    border-radius: 3px;
+  }
+
+  .mood-badge {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.5rem;
+    border-radius: 2px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    align-self: start;
+  }
+
+  .mood-badge.bullish { background: var(--bullish-bg); color: var(--bullish); }
+  .mood-badge.bearish { background: var(--bearish-bg); color: var(--bearish); }
+  .mood-badge.mixed { background: var(--mixed-bg); color: var(--mixed); }
+
+  /* STATS PANEL */
+  .stats-panel {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .stat-block {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .stat-block-label {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 0.75rem;
+  }
+
+  .mood-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .mood-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .mood-row-label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    width: 60px;
+    letter-spacing: 0.05em;
+  }
+
+  .mood-row-label.bullish { color: var(--bullish); }
+  .mood-row-label.bearish { color: var(--bearish); }
+  .mood-row-label.mixed { color: var(--mixed); }
+
+  .mood-bar-track {
+    flex: 1;
+    height: 4px;
+    background: var(--rule);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .mood-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.8s ease;
+  }
+
+  .mood-bar-fill.bullish { background: var(--bullish); }
+  .mood-bar-fill.bearish { background: var(--bearish); }
+  .mood-bar-fill.mixed { background: var(--accent); }
+
+  .mood-row-count {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: #888;
+    width: 24px;
+    text-align: right;
+  }
+
+  .top-source-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .top-source-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .top-source-name {
+    font-family: var(--sans);
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+
+  .top-source-count {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: #888;
+  }
+
+  /* CHARTS SECTION */
+  .charts-section {
+    border-top: 2px solid var(--ink);
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+  }
+
+  .chart-block {
+    padding: 1.5rem;
+    border-right: 1px solid var(--rule);
+  }
+
+  .chart-block:last-child { border-right: none; }
+
+  .chart-title {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 1rem;
+  }
+
+  .chart-container {
+    height: 200px;
+    position: relative;
+  }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--rule);
+    padding: 0.75rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--cream);
+  }
+
+  .footer-text {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+    color: #aaa;
+  }
+
+  .refresh-timer {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: #aaa;
+  }
+
+  /* LOADING STATE */
+  .skeleton {
+    background: linear-gradient(90deg, var(--cream) 25%, var(--rule) 50%, var(--cream) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 2px;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  .skeleton-line { height: 16px; margin-bottom: 8px; }
+  .skeleton-line.short { width: 40%; }
+
+  /* ERROR STATE */
+  .error-msg {
+    padding: 2rem;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--bearish);
+    text-align: center;
+  }
+
+  /* RESPONSIVE DESIGN - MOBILE */
+  @media (max-width: 1024px) {
+    .main-grid {
+      grid-template-columns: 1fr 280px;
+    }
+    
+    .stats-panel {
+      font-size: 0.9rem;
+    }
+  }
+
+  @media (max-width: 768px) {
+    header {
+      padding: 0 1rem;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .masthead {
+      border-right: none;
+      padding-right: 0;
+      padding: 0.75rem 0;
+    }
+
+    .masthead h1 {
+      font-size: 1.5rem;
+    }
+
+    .header-meta {
+      padding-bottom: 0.75rem;
+      gap: 1rem;
+      font-size: 0.6rem;
+    }
+
+    .summary-bar {
+      grid-template-columns: 1fr;
+    }
+
+    .summary-divider {
+      display: none;
+    }
+
+    .summary-item {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .summary-value {
+      font-size: 1.2rem;
+    }
+
+    .main-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .feed-section {
+      border-right: none;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .section-header {
+      top: auto;
+      position: relative;
+      padding: 0.5rem 1rem;
+    }
+
+    .feed {
+      max-height: none;
+    }
+
+    .headline-card {
+      padding: 1rem;
+      gap: 0.75rem;
+    }
+
+    .headline-text {
+      font-size: 0.95rem;
+    }
+
+    .stats-panel {
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+
+    .stat-block {
+      flex: 1;
+      min-width: 200px;
+      padding: 1rem;
+    }
+
+    .charts-section {
+      grid-template-columns: 1fr;
+    }
+
+    .chart-block {
+      border-right: none;
+      border-bottom: 1px solid var(--rule);
+      padding: 1rem;
+    }
+
+    .chart-container {
+      height: 180px;
+    }
+
+    footer {
+      padding: 0.75rem 1rem;
+      flex-direction: column;
+      gap: 0.5rem;
+      text-align: center;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .masthead h1 {
+      font-size: 1.25rem;
+    }
+
+    .masthead .tagline {
+      font-size: 0.55rem;
+    }
+
+    .headline-card {
+      grid-template-columns: 1fr auto;
+    }
+
+    .mood-bar {
+      display: none;
+    }
+
+    .headline-meta {
+      gap: 0.5rem;
+    }
+
+    .time-tag {
+      font-size: 0.55rem;
+    }
+
+    .source-tag {
+      font-size: 0.55rem;
+    }
+
+    .mood-badge {
+      font-size: 0.55rem;
+      padding: 0.15rem 0.4rem;
+    }
+
+    .chart-container {
+      height: 160px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="masthead">
+    <h1>Market Pulse</h1>
+    <div class="tagline">Live Financial News Intelligence</div>
+  </div>
+  <div class="header-meta">
+    <div class="live-indicator">
+      <div class="pulse"></div>
+      <span>Live</span>
+    </div>
+    <span id="last-updated">—</span>
+  </div>
+</header>
+
+<!-- SUMMARY BAR - Stories Tracked Removed -->
+<div class="summary-bar">
+  <div class="summary-item">
+    <span class="summary-label">Market Mood</span>
+    <span class="summary-value" id="overall-mood">—</span>
+  </div>
+  <div class="summary-divider"></div>
+  <div class="summary-item">
+    <span class="summary-label">Bullish Coverage</span>
+    <span class="summary-value bullish" id="bullish-pct">—</span>
+  </div>
+  <div class="summary-divider"></div>
+  <div class="summary-item">
+    <span class="summary-label">Bearish Coverage</span>
+    <span class="summary-value bearish" id="bearish-pct">—</span>
+  </div>
+</div>
+
+<!-- MAIN GRID -->
+<div class="main-grid">
+
+  <!-- HEADLINES FEED -->
+  <div class="feed-section">
+    <div class="section-header">
+      <span class="section-title">Latest Dispatches</span>
+      <span class="article-count" id="feed-count">—</span>
+    </div>
+    <div class="feed" id="headlines-feed">
+      <!-- Skeleton loader -->
+      <div style="padding:1.5rem">
+        <div class="skeleton skeleton-line" style="width:85%"></div>
+        <div class="skeleton skeleton-line short"></div>
+      </div>
+      <div style="padding:1.5rem; border-top:1px solid var(--rule)">
+        <div class="skeleton skeleton-line" style="width:70%"></div>
+        <div class="skeleton skeleton-line short"></div>
+      </div>
+      <div style="padding:1.5rem; border-top:1px solid var(--rule)">
+        <div class="skeleton skeleton-line" style="width:90%"></div>
+        <div class="skeleton skeleton-line short"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATS PANEL -->
+  <div class="stats-panel">
+    <div class="section-header">
+      <span class="section-title">Breakdown</span>
+    </div>
+
+    <div class="stat-block">
+      <div class="stat-block-label">Market Mood Split</div>
+      <div class="mood-breakdown" id="mood-breakdown">
+        <div class="mood-row">
+          <span class="mood-row-label bullish">Bullish</span>
+          <div class="mood-bar-track"><div class="mood-bar-fill bullish" id="bar-bullish" style="width:0%"></div></div>
+          <span class="mood-row-count" id="count-bullish">—</span>
+        </div>
+        <div class="mood-row">
+          <span class="mood-row-label bearish">Bearish</span>
+          <div class="mood-bar-track"><div class="mood-bar-fill bearish" id="bar-bearish" style="width:0%"></div></div>
+          <span class="mood-row-count" id="count-bearish">—</span>
+        </div>
+        <div class="mood-row">
+          <span class="mood-row-label mixed">Mixed</span>
+          <div class="mood-bar-track"><div class="mood-bar-fill mixed" id="bar-mixed" style="width:0%"></div></div>
+          <span class="mood-row-count" id="count-mixed">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-block">
+      <div class="stat-block-label">Top Sources</div>
+      <div class="top-source-list" id="top-sources">—</div>
+    </div>
+  </div>
+</div>
+
+<!-- CHARTS -->
+<div class="charts-section">
+  <div class="chart-block">
+    <div class="chart-title">Market Mood Over Time</div>
+    <div class="chart-container">
+      <canvas id="trend-chart"></canvas>
+    </div>
+  </div>
+  <div class="chart-block">
+    <div class="chart-title">Coverage Distribution</div>
+    <div class="chart-container">
+      <canvas id="donut-chart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <span class="footer-text">Powered by FinBERT · Real-time market intelligence</span>
+  <span class="refresh-timer" id="refresh-timer">Refreshing in 60s</span>
+</footer>
+
+<script>
+  // ─── CONFIG ───────────────────────────────────────────
+  // Use relative URL for host integrity
+  const API_BASE = "__BACKEND_URL__";
+const REFRESH_INTERVAL = 60;
+
+  // ─── LABEL TRANSLATION ────────────────────────────────
+  function toMarketLanguage(label) {
+    const map = { 'Positive': 'Bullish', 'Negative': 'Bearish', 'Neutral': 'Mixed' };
+    return map[label] || label;
+  }
+
+  function moodClass(label) {
+    const map = { 'Positive': 'bullish', 'Negative': 'bearish', 'Neutral': 'mixed' };
+    return map[label] || 'mixed';
+  }
+
+  // ─── TIME FORMATTING ──────────────────────────────────
+  // Updated to show day, month, and year
+  function formatTime(iso) {
+    try {
+      const d = new Date(iso);
+      const day = d.getDate();
+      const month = d.toLocaleString('en-GB', { month: 'short' });
+      const year = d.getFullYear();
+      const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+      return `${day} ${month} ${year}, ${time}`;
+    } catch { return '—'; }
+  }
+
+  function formatDateTime(iso) {
+    try {
+      const d = new Date(iso);
+      const day = d.getDate();
+      const month = d.toLocaleString('en-GB', { month: 'short' });
+      const year = d.getFullYear();
+      const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+      return `${day} ${month} ${year}, ${time}`;
+    } catch { return '—'; }
+  }
+
+  // ─── RENDER HEADLINES ─────────────────────────────────
+  function renderHeadlines(articles) {
+    const feed = document.getElementById('headlines-feed');
+    if (!articles.length) {
+      feed.innerHTML = '<div class="error-msg">No stories available</div>';
+      return;
+    }
+
+    feed.innerHTML = articles.map((a, i) => {
+      const mood = moodClass(a.label);
+      const moodLabel = toMarketLanguage(a.label);
+      const headline = a.headline.replace(/ - [^-]+$/, ''); // strip source suffix
+      return `
+        <div class="headline-card" style="animation-delay:${i * 0.04}s">
+          <div class="mood-bar ${mood}"></div>
+          <div class="headline-content">
+            <div class="headline-text">${headline}</div>
+            <div class="headline-meta">
+              <span class="source-tag">${a.source}</span>
+              <span class="time-tag">${formatTime(a.published_at)}</span>
+            </div>
+          </div>
+          <span class="mood-badge ${mood}">${moodLabel}</span>
+        </div>`;
+    }).join('');
+
+    document.getElementById('feed-count').textContent = `${articles.length} stories`;
+  }
+
+  // ─── RENDER SUMMARY ───────────────────────────────────
+  function renderSummary(articles) {
+    const total = articles.length;
+    const counts = { Positive: 0, Negative: 0, Neutral: 0 };
+    articles.forEach(a => { if (counts[a.label] !== undefined) counts[a.label]++; });
+
+    const dominant = Object.entries(counts).sort((a,b) => b[1]-a[1])[0][0];
+    const moodEl = document.getElementById('overall-mood');
+    moodEl.textContent = toMarketLanguage(dominant);
+    moodEl.className = 'summary-value ' + moodClass(dominant);
+
+    document.getElementById('bullish-pct').textContent =
+      total ? Math.round(counts.Positive / total * 100) + '%' : '—';
+    document.getElementById('bearish-pct').textContent =
+      total ? Math.round(counts.Negative / total * 100) + '%' : '—';
+
+    // Mood bars
+    ['bullish','bearish','mixed'].forEach(m => {
+      const key = m === 'bullish' ? 'Positive' : m === 'bearish' ? 'Negative' : 'Neutral';
+      const pct = total ? counts[key] / total * 100 : 0;
+      document.getElementById('bar-' + m).style.width = pct + '%';
+      document.getElementById('count-' + m).textContent = counts[key];
+    });
+
+    // Top sources
+    const sourceCounts = {};
+    articles.forEach(a => { sourceCounts[a.source] = (sourceCounts[a.source] || 0) + 1; });
+    const topSources = Object.entries(sourceCounts).sort((a,b) => b[1]-a[1]).slice(0,5);
+    document.getElementById('top-sources').innerHTML = topSources.map(([name, count]) => `
+      <div class="top-source-item">
+        <span class="top-source-name">${name}</span>
+        <span class="top-source-count">${count}</span>
+      </div>`).join('');
+  }
+
+  // ─── CHARTS ───────────────────────────────────────────
+  let trendChart = null;
+  let donutChart = null;
+
+  function renderCharts(trendData, articles) {
+    // Trend chart - Enhanced styling
+    const buckets = [...new Set(trendData.map(d => d.hour_bucket))].sort();
+    const bullishData = buckets.map(b => {
+      const r = trendData.find(d => d.hour_bucket === b && d.label === 'Positive');
+      return r ? r.count : 0;
+    });
+    const bearishData = buckets.map(b => {
+      const r = trendData.find(d => d.hour_bucket === b && d.label === 'Negative');
+      return r ? r.count : 0;
+    });
+    const mixedData = buckets.map(b => {
+      const r = trendData.find(d => d.hour_bucket === b && d.label === 'Neutral');
+      return r ? r.count : 0;
+    });
+
+    // Format date labels nicely
+    const formattedLabels = buckets.map(b => {
+      const d = new Date(b);
+      return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    });
+
+    const trendCtx = document.getElementById('trend-chart').getContext('2d');
+    if (trendChart) trendChart.destroy();
+    
+    // Create gradient fills
+    const bullishGradient = trendCtx.createLinearGradient(0, 0, 0, 200);
+    bullishGradient.addColorStop(0, 'rgba(26, 107, 58, 0.8)');
+    bullishGradient.addColorStop(1, 'rgba(26, 107, 58, 0.3)');
+    
+    const bearishGradient = trendCtx.createLinearGradient(0, 0, 0, 200);
+    bearishGradient.addColorStop(0, 'rgba(139, 26, 26, 0.8)');
+    bearishGradient.addColorStop(1, 'rgba(139, 26, 26, 0.3)');
+    
+    const mixedGradient = trendCtx.createLinearGradient(0, 0, 0, 200);
+    mixedGradient.addColorStop(0, 'rgba(200, 168, 75, 0.8)');
+    mixedGradient.addColorStop(1, 'rgba(200, 168, 75, 0.3)');
+
+    trendChart = new Chart(trendCtx, {
+      type: 'bar',
+      data: {
+        labels: formattedLabels,
+        datasets: [
+          { 
+            label: 'Bullish', 
+            data: bullishData, 
+            backgroundColor: bullishGradient,
+            borderColor: '#1a6b3a',
+            borderWidth: 1,
+            borderRadius: 4,
+            borderSkipped: false
+          },
+          { 
+            label: 'Bearish', 
+            data: bearishData, 
+            backgroundColor: bearishGradient,
+            borderColor: '#8b1a1a',
+            borderWidth: 1,
+            borderRadius: 4,
+            borderSkipped: false
+          },
+          { 
+            label: 'Mixed', 
+            data: mixedData, 
+            backgroundColor: mixedGradient,
+            borderColor: '#c8a84b',
+            borderWidth: 1,
+            borderRadius: 4,
+            borderSkipped: false
+          },
+        ]
+      },
+      options: {
+        responsive: true, 
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        plugins: { 
+          legend: { 
+            display: true,
+            position: 'top',
+            align: 'end',
+            labels: { 
+              font: { family: 'IBM Plex Mono', size: 11 }, 
+              color: '#666',
+              usePointStyle: true,
+              pointStyle: 'circle',
+              padding: 15
+            } 
+          },
+          tooltip: {
+            backgroundColor: 'rgba(15, 15, 15, 0.9)',
+            titleFont: { family: 'IBM Plex Mono', size: 11 },
+            bodyFont: { family: 'IBM Plex Sans', size: 12 },
+            padding: 12,
+            cornerRadius: 4,
+            displayColors: true,
+          }
+        },
+        scales: {
+          x: { 
+            stacked: true, 
+            ticks: { 
+              font: { family: 'IBM Plex Mono', size: 10 }, 
+              color: '#888' 
+            }, 
+            grid: { 
+              color: 'rgba(212, 207, 196, 0.3)',
+              drawBorder: false
+            } 
+          },
+          y: { 
+            stacked: true, 
+            ticks: { 
+              font: { family: 'IBM Plex Mono', size: 10 }, 
+              color: '#888',
+              padding: 8
+            }, 
+            grid: { 
+              color: 'rgba(212, 207, 196, 0.3)',
+              drawBorder: false
+            },
+            beginAtZero: true
+          }
+        }
+      }
+    });
+
+    // Donut chart - Enhanced styling
+    const counts = { Positive: 0, Negative: 0, Neutral: 0 };
+    articles.forEach(a => { if (counts[a.label] !== undefined) counts[a.label]++; });
+
+    const donutCtx = document.getElementById('donut-chart').getContext('2d');
+    if (donutChart) donutChart.destroy();
+    
+    // Create donut gradients
+    const donutBullishGradient = donutCtx.createLinearGradient(0, 0, 0, 200);
+    donutBullishGradient.addColorStop(0, '#2d8a52');
+    donutBullishGradient.addColorStop(1, '#1a6b3a');
+    
+    const donutBearishGradient = donutCtx.createLinearGradient(0, 0, 0, 200);
+    donutBearishGradient.addColorStop(0, '#b52a2a');
+    donutBearishGradient.addColorStop(1, '#8b1a1a');
+    
+    const donutMixedGradient = donutCtx.createLinearGradient(0, 0, 0, 200);
+    donutMixedGradient.addColorStop(0, '#d4b85a');
+    donutMixedGradient.addColorStop(1, '#c8a84b');
+
+    donutChart = new Chart(donutCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Bullish', 'Bearish', 'Mixed'],
+        datasets: [{
+          data: [counts.Positive, counts.Negative, counts.Neutral],
+          backgroundColor: [donutBullishGradient, donutBearishGradient, donutMixedGradient],
+          borderWidth: 2,
+          borderColor: '#f5f0e8',
+          hoverOffset: 8,
+          hoverBorderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true, 
+        maintainAspectRatio: false,
+        cutout: '65%',
+        plugins: { 
+          legend: { 
+            position: 'bottom', 
+            labels: { 
+              font: { family: 'IBM Plex Mono', size: 11 }, 
+              color: '#666', 
+              padding: 15,
+              usePointStyle: true,
+              pointStyle: 'circle'
+            } 
+          },
+          tooltip: {
+            backgroundColor: 'rgba(15, 15, 15, 0.9)',
+            bodyFont: { family: 'IBM Plex Sans', size: 12 },
+            padding: 12,
+            cornerRadius: 4,
+            callbacks: {
+              label: function(context) {
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = total ? Math.round((context.raw / total) * 100) : 0;
+                return `${context.label}: ${context.raw} (${percentage}%)`;
+              }
+            }
+          }
+        }
+      },
+      plugins: [{
+        id: 'centerText',
+        beforeDraw: function(chart) {
+          const total = counts.Positive + counts.Negative + counts.Neutral;
+          if (total === 0) return;
+          
+          const ctx = chart.ctx;
+          const centerX = chart.chartArea.left + (chart.chartArea.right - chart.chartArea.left) / 2;
+          const centerY = chart.chartArea.top + (chart.chartArea.bottom - chart.chartArea.top) / 2;
+          
+          ctx.save();
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          
+          ctx.font = 'bold 24px "IBM Plex Mono"';
+          ctx.fillStyle = '#0f0f0f';
+          ctx.fillText(total.toString(), centerX, centerY - 8);
+          
+          ctx.font = '10px "IBM Plex Mono"';
+          ctx.fillStyle = '#888';
+          ctx.fillText('ARTICLES', centerX, centerY + 12);
+          
+          ctx.restore();
+        }
+      }]
+    });
+  }
+
+  // ─── MAIN FETCH ───────────────────────────────────────
+  async function fetchAndRender() {
+    try {
+      const [articlesRes, trendRes] = await Promise.all([
+        fetch(`${API_BASE}/articles/latest`),
+        fetch(`${API_BASE}/sentiment/trend`)
+      ]);
+
+      const articles = await articlesRes.json();
+      const trendData = await trendRes.json();
+
+      renderHeadlines(articles);
+      renderSummary(articles);
+      renderCharts(trendData, articles);
+
+      const now = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+      document.getElementById('last-updated').textContent = `Updated ${now}`;
+    } catch (err) {
+      document.getElementById('headlines-feed').innerHTML =
+        '<div class="error-msg">Could not connect to API — ensure server is running on localhost:8000</div>';
+      console.error(err);
+    }
+  }
+
+  // ─── REFRESH TIMER ────────────────────────────────────
+  let secondsLeft = REFRESH_INTERVAL;
+  setInterval(() => {
+    secondsLeft--;
+    document.getElementById('refresh-timer').textContent = `Refreshing in ${secondsLeft}s`;
+    if (secondsLeft <= 0) {
+      secondsLeft = REFRESH_INTERVAL;
+      fetchAndRender();
+    }
+  }, 1000);
+
+  // ─── INIT ─────────────────────────────────────────────
+  fetchAndRender();
+</script>
+</body>
+</html>

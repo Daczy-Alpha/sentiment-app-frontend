@@ -1,0 +1,32 @@
+name: CI-CD
+# CI-CD pipeline triggered when a pull request is merged into the main branch
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  continuous-integration:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: config AWS credentials
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set default.region eu-north-1
+
+      - name: login to ECR
+        run: |
+          aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 487620625686.dkr.ecr.eu-north-1.amazonaws.com
+
+
+      - name: Build and Push Docker image to ECR
+        run: |
+          docker build -t sentiment-frontend:${{ github.run_number }} .
+          docker tag sentiment-frontend:${{ github.run_number }} 487620625686.dkr.ecr.eu-north-1.amazonaws.com/sentiment-frontend:${{ github.run_number }}
+          docker push 487620625686.dkr.ecr.eu-north-1.amazonaws.com/sentiment-frontend:${{ github.run_number }}
