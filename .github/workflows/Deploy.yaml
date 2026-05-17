@@ -31,7 +31,8 @@ jobs:
           docker tag sentiment-frontend:${{ github.run_number }} 487620625686.dkr.ecr.eu-north-1.amazonaws.com/sentiment-frontend:${{ github.run_number }}
           docker push 487620625686.dkr.ecr.eu-north-1.amazonaws.com/sentiment-frontend:${{ github.run_number }}
 
-  continuous-cluster-deployment:
+
+          continuous-cluster-deployment:
     runs-on: ubuntu-latest
     needs: continuous-integration
     steps:
