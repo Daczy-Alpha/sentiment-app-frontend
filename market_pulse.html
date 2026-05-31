@@ -1001,6 +1001,9 @@
 </div><!-- /page-content -->
 
 <script>
+  // Backend API base URL. This placeholder is replaced by docker-entrypoint.sh using the BACKEND_URL env var.
+  const API_BASE = "__BACKEND_URL__";
+
   // Clock
   function tick() {
     const now = new Date();
@@ -1031,18 +1034,47 @@
 
   async function fetchNews() {
     try {
-      const r = await fetch('https://sentiment.pod14project.online/api/articles');
-      const d = await r.json();
+      const [articlesRes, trendRes] = await Promise.all([
+        fetch(`${API_BASE}/articles/latest`),
+        fetch(`${API_BASE}/sentiment/trend`)
+      ]);
+
+      if (!articlesRes.ok) {
+        throw new Error(`Articles request failed: ${articlesRes.status}`);
+      }
+
+      if (!trendRes.ok) {
+        throw new Error(`Trend request failed: ${trendRes.status}`);
+      }
+
+      const articlesData = await articlesRes.json();
+      const trendData = await trendRes.json();
+
       let arts = [];
-      if(Array.isArray(d)) arts=d;
-      else if(d.articles) arts=d.articles;
-      else if(d.data) arts=d.data;
-      else for(const k of Object.keys(d)) { if(Array.isArray(d[k])){arts=d[k];break;} }
+
+      if (Array.isArray(articlesData)) {
+        arts = articlesData;
+      } else if (articlesData.articles) {
+        arts = articlesData.articles;
+      } else if (articlesData.data) {
+        arts = articlesData.data;
+      } else {
+        for (const k of Object.keys(articlesData)) {
+          if (Array.isArray(articlesData[k])) {
+            arts = articlesData[k];
+            break;
+          }
+        }
+      }
+
       allArticles = arts;
+
       document.getElementById('api-status').textContent = 'Connected';
       document.getElementById('api-status').style.color = 'var(--green)';
-      processData(arts);
+
+      processData(arts, trendData);
     } catch(e) {
+      console.error(e);
       document.getElementById('api-status').textContent = 'Error';
       document.getElementById('api-status').style.color = 'var(--red)';
       document.getElementById('loading-state').innerHTML = `
@@ -1110,7 +1142,15 @@
     const q = document.getElementById('search-input').value.toLowerCase();
     return allArticles.filter(a=>{
       const mS = currentFilter==='all'||getSent(a)===currentFilter;
-      const mQ = !q||(a.title||'').toLowerCase().includes(q)||(a.summary||a.description||'').toLowerCase().includes(q)||getTickers(a).join(' ').toLowerCase().includes(q);
+      const searchableText = [
+        a.title || '',
+        a.headline || '',
+        a.summary || '',
+        a.description || '',
+        getSrc(a),
+        getTickers(a).join(' ')
+      ].join(' ').toLowerCase();
+      const mQ = !q || searchableText.includes(q);
       return mS&&mQ;
     });
   }
