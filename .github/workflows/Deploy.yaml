@@ -4,8 +4,14 @@ on:
   pull_request:
     types: [closed]
 
+env:
+  AWS_REGION: eu-north-1
+  ECR_REGISTRY: 487620625686.dkr.ecr.eu-north-1.amazonaws.com
+  IMAGE_NAME: sentiment-frontend
+  GITOPS_REPO: Daczy-Alpha/sent-fron-config
+
 jobs:
-  continuous-integration:
+  build-and-push:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
@@ -13,40 +19,89 @@ jobs:
       - name: Checkout frontend repository
         uses: actions/checkout@v4
 
+      - name: Verify frontend source before build
+        run: |
+          echo "Current directory:"
+          pwd
+
+          echo "Repository files:"
+          ls -la
+
+          echo "Checking frontend file exists:"
+          test -f market_pulse.html
+
+          echo "Checking Dockerfile exists:"
+          test -f Dockerfile
+
+          echo "Checking entrypoint exists:"
+          test -f docker-entrypoint.sh
+
+          echo "Verifying correct backend placeholders/endpoints:"
+          grep -n "API_BASE\|BACKEND_URL\|articles/latest\|sentiment/trend" market_pulse.html
+
+          echo "Fail if old hardcoded API is still present:"
+          if grep -n "sentiment.pod14project.online/api/articles\|api/articles" market_pulse.html; then
+            echo "ERROR: Old hardcoded API endpoint still exists in market_pulse.html"
+            exit 1
+          fi
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-north-1
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
         run: |
-          aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 487620625686.dkr.ecr.eu-north-1.amazonaws.com
+          aws ecr get-login-password --region $AWS_REGION | \
+          docker login --username AWS --password-stdin $ECR_REGISTRY
 
-      - name: Build and push frontend image
+      - name: Build frontend image
         run: |
-          docker build -t sentiment-frontend:${{ github.run_number }} .
-          docker tag sentiment-frontend:${{ github.run_number }} 487620625686.dkr.ecr.eu-north-1.amazonaws.com/sentiment-frontend:${{ github.run_number }}
-          docker push 487620625686.dkr.ecr.eu-north-1.amazonaws.com/sentiment-frontend:${{ github.run_number }}
+          docker build --no-cache \
+            -t $IMAGE_NAME:${{ github.run_number }} \
+            -t $ECR_REGISTRY/$IMAGE_NAME:${{ github.run_number }} \
+            .
 
-  continuous-cluster-deployment:
+      - name: Verify built image content
+        run: |
+          docker run --rm --entrypoint sh $IMAGE_NAME:${{ github.run_number }} -c "
+            echo 'Checking built image index.html...'
+            grep -n 'API_BASE\|articles/latest\|sentiment/trend' /usr/share/nginx/html/index.html
+
+            echo 'Fail if old endpoint exists in built image...'
+            if grep -n 'sentiment.pod14project.online/api/articles\|api/articles' /usr/share/nginx/html/index.html; then
+              echo 'ERROR: Built image still contains old hardcoded API endpoint'
+              exit 1
+            fi
+          "
+
+      - name: Push frontend image to ECR
+        run: |
+          docker push $ECR_REGISTRY/$IMAGE_NAME:${{ github.run_number }}
+
+  update-gitops:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
-    needs: continuous-integration
+    needs: build-and-push
 
     steps:
       - name: Clone GitOps frontend config repository
         run: |
-          git clone https://${{ secrets.GITOPS_USERNAME }}:${{ secrets.GITOPS_TOKEN }}@github.com/Daczy-Alpha/sent-fron-config.git
+          git clone https://${{ secrets.GITOPS_USERNAME }}:${{ secrets.GITOPS_TOKEN }}@github.com/${{ env.GITOPS_REPO }}.git
 
       - name: Update frontend deployment image tag
         run: |
           cd sent-fron-config
 
-          sed -i "s|image: 487620625686.dkr.ecr.eu-north-1.amazonaws.com/sentiment-frontend:.*|image: 487620625686.dkr.ecr.eu-north-1.amazonaws.com/sentiment-frontend:${{ github.run_number }}|g" deployment.yaml
+          sed -i "s|image: ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:.*|image: ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.run_number }}|g" deployment.yaml
 
+          echo "Updated deployment.yaml:"
           cat deployment.yaml
+
+          echo "Verify deployment uses new image tag:"
+          grep "image: ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.run_number }}" deployment.yaml
 
       - name: Commit and push GitOps update
         run: |
@@ -56,5 +111,10 @@ jobs:
           git config user.email "${{ secrets.GITOPS_EMAIL }}"
 
           git add deployment.yaml
-          git commit -m "Update frontend image to ${{ github.run_number }}"
-          git push origin main
+
+          if git diff --cached --quiet; then
+            echo "No GitOps changes to commit"
+          else
+            git commit -m "Update frontend image to ${{ github.run_number }}"
+            git push origin main
+          fi
