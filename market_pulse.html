@@ -165,64 +165,6 @@
     color: var(--violet2);
   }
 
-  .nav-tickers {
-    display: flex;
-    gap: 4px;
-  }
-
-  .nav-ticker {
-    padding: 4px 12px;
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    font-family: var(--font);
-    font-size: 11px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: var(--glass);
-    transition: all 0.15s;
-  }
-
-  .nav-ticker:hover { background: var(--glass2); border-color: var(--border2); }
-
-  .nav-ticker .sym { color: var(--text2); font-weight: 600; }
-  .nav-ticker .up { color: var(--green); }
-  .nav-ticker .dn { color: var(--red); }
-
-  .nav-right {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .live-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 12px;
-    border-radius: 20px;
-    background: rgba(0,229,154,0.1);
-    border: 1px solid rgba(0,229,154,0.2);
-    font-family: var(--font);
-    font-size: 11px;
-    color: var(--green);
-    font-weight: 600;
-    letter-spacing: 0.08em;
-  }
-
-  .live-badge::before {
-    content: '';
-    width: 6px; height: 6px;
-    background: var(--green);
-    border-radius: 50%;
-    animation: live-pulse 1.5s ease infinite;
-  }
-
-  @keyframes live-pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.5; transform: scale(0.8); }
-  }
-
   .nav-clock {
     font-family: var(--font);
     font-size: 12px;
@@ -327,35 +269,6 @@
     border-color: var(--red);
     color: var(--red);
   }
-
-  .filter-search {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-    background: var(--glass);
-    border: 1px solid var(--border);
-    border-radius: 24px;
-    padding: 6px 16px;
-    gap: 8px;
-    transition: all 0.2s;
-  }
-
-  .filter-search:focus-within {
-    border-color: var(--violet2);
-    background: var(--glass2);
-  }
-
-  .filter-search input {
-    background: none;
-    border: none;
-    outline: none;
-    color: var(--text);
-    font-family: var(--font);
-    font-size: 12px;
-    width: 180px;
-  }
-
-  .filter-search input::placeholder { color: var(--muted); }
 
   /* MAIN LAYOUT */
   .main-layout {
@@ -688,63 +601,6 @@
   .legend-label { color: var(--muted2); font-family: var(--font); font-size: 11px; flex: 1; }
   .legend-val { font-family: var(--font); font-size: 13px; font-weight: 700; color: var(--text); }
 
-  /* MOVER LIST */
-  .mover-list {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .mover-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 10px;
-    border-radius: 10px;
-    transition: background 0.15s;
-  }
-
-  .mover-item:hover { background: var(--glass2); }
-
-  .mover-rank {
-    font-family: var(--font);
-    font-size: 10px;
-    color: var(--muted);
-    width: 16px;
-    text-align: center;
-  }
-
-  .mover-sym {
-    font-family: var(--font);
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--text);
-    width: 44px;
-  }
-
-  .mover-bar-wrap {
-    flex: 1;
-    height: 3px;
-    background: var(--border);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-
-  .mover-bar {
-    height: 100%;
-    background: linear-gradient(90deg, var(--violet), var(--cyan));
-    border-radius: 2px;
-    transition: width 1s ease;
-  }
-
-  .mover-count {
-    font-family: var(--font);
-    font-size: 11px;
-    color: var(--muted2);
-    width: 24px;
-    text-align: right;
-  }
-
   /* LOAD MORE */
   .load-more-area {
     margin-top: 8px;
@@ -821,12 +677,6 @@
     <div class="logo-mark">MP</div>
     <div class="logo-text">Market<span>Pulse</span></div>
   </div>
-  <div class="nav-tickers">
-    <div class="nav-ticker"><span class="sym">SPY</span><span class="up">▲ 0.82%</span></div>
-    <div class="nav-ticker"><span class="sym">QQQ</span><span class="dn">▼ 0.34%</span></div>
-    <div class="nav-ticker"><span class="sym">BTC</span><span class="up">▲ 2.17%</span></div>
-    <div class="nav-ticker"><span class="sym">GLD</span><span class="up">▲ 0.41%</span></div>
-  </div>
   <div class="nav-right">
     <div class="live-badge">LIVE</div>
     <div class="nav-clock" id="nav-clock">--:--:--</div>
@@ -863,10 +713,6 @@
   <button class="chip bull-chip" onclick="setFilter('positive',this)">Bullish</button>
   <button class="chip bear-chip" onclick="setFilter('negative',this)">Bearish</button>
   <button class="chip" onclick="setFilter('neutral',this)">Neutral</button>
-  <div class="filter-search">
-    <span style="color:var(--muted);font-size:14px">⌕</span>
-    <input type="text" placeholder="Search tickers, keywords…" id="search-input" oninput="filterNews()">
-  </div>
 </div>
 
 <!-- MAIN -->
@@ -964,37 +810,6 @@
       </div>
     </div>
 
-    <!-- Top Tickers -->
-    <div class="sidebar-panel">
-      <div class="panel-title">Top Tickers</div>
-      <div class="mover-list" id="mover-list">
-        <div class="mover-item"><div class="mover-rank">1</div><div class="skel" style="height:12px;width:40px;border-radius:4px"></div><div class="mover-bar-wrap"><div class="mover-bar" style="width:0%"></div></div></div>
-        <div class="mover-item"><div class="mover-rank">2</div><div class="skel" style="height:12px;width:40px;border-radius:4px"></div><div class="mover-bar-wrap"><div class="mover-bar" style="width:0%"></div></div></div>
-        <div class="mover-item"><div class="mover-rank">3</div><div class="skel" style="height:12px;width:40px;border-radius:4px"></div><div class="mover-bar-wrap"><div class="mover-bar" style="width:0%"></div></div></div>
-        <div class="mover-item"><div class="mover-rank">4</div><div class="skel" style="height:12px;width:40px;border-radius:4px"></div><div class="mover-bar-wrap"><div class="mover-bar" style="width:0%"></div></div></div>
-        <div class="mover-item"><div class="mover-rank">5</div><div class="skel" style="height:12px;width:40px;border-radius:4px"></div><div class="mover-bar-wrap"><div class="mover-bar" style="width:0%"></div></div></div>
-      </div>
-    </div>
-
-    <!-- Feed Info -->
-    <div class="sidebar-panel">
-      <div class="panel-title">Data Source</div>
-      <div style="font-family:var(--font);font-size:11px;color:var(--muted2);line-height:2.2">
-        <div style="display:flex;justify-content:space-between">
-          <span>Endpoint</span>
-          <span style="color:var(--violet2)">pod14project.online</span>
-        </div>
-        <div style="display:flex;justify-content:space-between">
-          <span>Refresh</span>
-          <span style="color:var(--text2)">Every 5 min</span>
-        </div>
-        <div style="display:flex;justify-content:space-between">
-          <span>Status</span>
-          <span style="color:var(--green)" id="api-status">Connecting…</span>
-        </div>
-      </div>
-    </div>
-
   </aside>
 </div>
 
@@ -1069,14 +884,9 @@
 
       allArticles = arts;
 
-      document.getElementById('api-status').textContent = 'Connected';
-      document.getElementById('api-status').style.color = 'var(--green)';
-
       processData(arts, trendData);
     } catch(e) {
       console.error(e);
-      document.getElementById('api-status').textContent = 'Error';
-      document.getElementById('api-status').style.color = 'var(--red)';
       document.getElementById('loading-state').innerHTML = `
         <div class="no-results" style="display:block">
           <div style="font-size:28px;margin-bottom:12px">⚡</div>
@@ -1121,25 +931,13 @@
       document.getElementById('donut-bear').setAttribute('transform', `rotate(${bearStart} 40 40)`);
     }, 400);
 
-    // Movers
-    const top = Object.entries(tickerMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
-    const maxC = top[0]?.[1]||1;
-    document.getElementById('mover-list').innerHTML = top.map(([sym,count],i)=>`
-      <div class="mover-item">
-        <div class="mover-rank">${i+1}</div>
-        <div class="mover-sym">${sym}</div>
-        <div class="mover-bar-wrap"><div class="mover-bar" style="width:${Math.round(count/maxC*100)}%"></div></div>
-        <div class="mover-count">${count}</div>
-      </div>
-    `).join('');
-
     document.getElementById('loading-state').style.display='none';
     currentPage=0;
     renderPage();
   }
 
   function getFiltered() {
-    const q = document.getElementById('search-input').value.toLowerCase();
+    const q = ''; // Search removed
     return allArticles.filter(a=>{
       const mS = currentFilter==='all'||getSent(a)===currentFilter;
       const searchableText = [
@@ -1257,7 +1055,7 @@
   function loadMore(){currentPage++;renderPage(false);}
 
   fetchNews();
-  setInterval(fetchNews,300000);
+  setInterval(fetchNews,1800000);
 </script>
 </body>
 </html>
